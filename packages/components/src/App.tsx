@@ -1,19 +1,54 @@
-import React from 'react';
-import { Button, StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Button, Platform, StyleSheet, TVEventHandler, View } from 'react-native';
 import { BackButton, Route, Router, Switch } from './Router';
 
+interface androidKeyEvent {
+  eventType: 'up' | 'down' | 'left' | 'right',
+  eventKeyAction: Number
+}
 
-const One = ({ history }: any) => {
+interface webKeyEvent {
+  which: Number
+}
+
+const webKeyboardListener = (event: webKeyEvent) => {
+  console.log('XXXXXXXXX keyboard event KEYYYBOARD LISTENER', event.which);
+};
+
+const keyboardEffect = Platform.select({
+  android: () => {
+    let handler = new TVEventHandler();
+    handler.enable(null, (component: React.Component, {eventKeyAction, eventType}: androidKeyEvent) => {
+      eventKeyAction === 0 ? console.log('XXXXXXXXX', eventType) : null;
+    });
+    return () => {
+      handler.disable();
+      handler = null;
+    }
+  },
+  web: () => {
+    window.addEventListener('keydown', webKeyboardListener);
+    return () => {
+      window.removeEventListener('keydown', webKeyboardListener);
+    }
+  }
+});
+
+const One: React.FC = ({ history }: any) => {
+  useEffect(keyboardEffect);
+
   return (
     <View style={styles.one}>
       <Button title="Go to Two" onPress={() => history.push("/two")}></Button>
     </View>
   )
 }
-const Two = ({ history }: any) => {
+const Two: React.FC = ({ history }: any) => {
+  useEffect(keyboardEffect);
+
   return (
     <View style={styles.two}>
-      <Button title="Go to One" onPress={() => history.push("/")}></Button>
+      <Button title="go to one" onPress={() => history.push("/")}></Button>
     </View>
   )
 }
@@ -21,7 +56,7 @@ const Two = ({ history }: any) => {
 const Routes = () => {
   return (
     <Router>
-      <BackButton/>
+      <BackButton />
       <Switch>
         <Route exact path="/" component={One} />
         <Route exact path="/two" component={Two} />
